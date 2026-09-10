@@ -1,0 +1,30 @@
+.lumilove-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.lumilove-logo-icon {
+  width: 2rem;
+  height: 2rem;
+  filter: drop-shadow(0 0 8px rgba(255, 45, 149, 0.4));
+  animation: pulse-glow 3s infinite ease-in-out;
+}
+
+.lumilove-logo-text {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@keyframes pulse-glow {
+  0% { filter: drop-shadow(0 0 6px rgba(255, 45, 149, 0.3)); }
+  50% { filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.6)); }
+  100% { filter: drop-shadow(0 0 6px rgba(255, 45, 149, 0.3)); }
+}

@@ -1,0 +1,44 @@
+.lumilove-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.lumilove-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-left: 0.5rem;
+}
+
+.lumilove-input {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border-radius: 9999px; /* Pill shape */
+  border: 2px solid var(--color-gray-200);
+  background: var(--color-white);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  transition: all var(--transition-fast);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.lumilove-input::placeholder {
+  color: var(--text-muted);
+}
+
+.lumilove-input:focus {
+  border-color: var(--color-pink);
+  box-shadow: 0 0 0 4px rgba(255, 79, 163, 0.15);
+}
+
+.lumilove-input.error {
+  border-color: var(--color-red);
+}
+
+.lumilove-input.error:focus {
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+}

@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Radiant Color Palette */
+  --color-magenta: #FF2D95;
+  --color-pink: #FF4FA3;
+  --color-violet: #8B5CF6;
+  --color-purple: #A855F7;
+  --color-coral: #FF6B6B;
+  --color-peach: #FFD1DC;
+  --color-champagne: #FFF4E6;
+  --color-white: #FFFFFF;
+  --color-plum: #35123F;
+  
+  /* Additional UI Colors */
+  --color-green: #10B981; /* Success */
+  --color-amber: #F59E0B; /* Warning */
+  --color-red: #EF4444; /* Error */
+  --color-gray-50: #F9FAFB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-200: #E5E7EB;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--color-magenta), var(--color-purple));
+  --gradient-romantic: linear-gradient(135deg, var(--color-pink), var(--color-coral));
+  --gradient-light: linear-gradient(135deg, var(--color-champagne), #FFE4F0, #F3E8FF);
+  
+  /* Text Colors */
+  --text-main: var(--color-plum);
+  --text-muted: #6B7280;
+  --text-light: var(--color-white);
+  
+  /* Backgrounds */
+  --bg-main: var(--color-white);
+  --bg-gradient: var(--gradient-light);
+  --bg-card: rgba(255, 255, 255, 0.85);
+
+  /* Shadows & Effects */
+  --shadow-soft: 0 10px 25px -5px rgba(255, 45, 149, 0.1), 0 8px 10px -6px rgba(255, 45, 149, 0.1);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 20px 25px -5px rgba(255, 45, 149, 0.15), 0 10px 10px -5px rgba(255, 45, 149, 0.05);
+  
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Transitions */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base Setup */
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--text-main);
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Typography Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 0;
+  line-height: 1.2;
+}
+
+h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); letter-spacing: -0.02em; }
+h2 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -0.01em; }
+h3 { font-size: clamp(1.5rem, 3vw, 2.25rem); }
+p { line-height: 1.6; margin-bottom: 1rem; }
+
+/* Utilities */
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
