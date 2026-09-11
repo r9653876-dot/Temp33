@@ -41,25 +41,15 @@
 .lumilove-button.secondary {
   background: var(--color-white);
   color: var(--color-magenta);
-  position: relative;
-  z-index: 1;
+  border: 2px solid var(--color-magenta);
   box-shadow: var(--shadow-card);
-}
-
-.lumilove-button.secondary::before {
-  content: '';
-  position: absolute;
-  top: -2px; left: -2px; right: -2px; bottom: -2px;
-  background: var(--gradient-primary);
-  z-index: -1;
-  border-radius: 9999px;
-  transition: opacity var(--transition-fast);
 }
 
 .lumilove-button.secondary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
   color: var(--color-purple);
+  border-color: var(--color-purple);
 }
 
 /* Ghost Button */
@@ -74,16 +64,16 @@
 
 /* Sizes */
 .lumilove-button.sm {
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.25rem;
   font-size: 0.875rem;
 }
 
 .lumilove-button.md {
-  padding: 0.75rem 1.5rem;
+  padding: 0.875rem 1.75rem;
   font-size: 1rem;
 }
 
 .lumilove-button.lg {
-  padding: 1rem 2rem;
+  padding: 1.125rem 2.25rem;
   font-size: 1.125rem;
 }
