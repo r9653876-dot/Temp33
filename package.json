@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "hono": "^4.13.7",
     "lucide-react": "^1.44.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.54.7",
+    "@cloudflare/workers-types": "^5.20260911.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",

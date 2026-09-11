@@ -1,8 +1,30 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "lumilove",
-  "compatibility_date": "2026-09-10",
-  "assets": {
-    "directory": "./dist"
-  }
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "lumilove",
+	"main": "worker/index.ts",
+	"compatibility_date": "2024-03-20",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": "./dist/",
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "lumilove-db",
+			"database_id": "1b5044e0-935f-4602-98e9-2af41ec7de10",
+			"migrations_dir": "migrations"
+		},
+		{
+			"binding": "lumilove_db",
+			"database_name": "lumilove-db",
+			"database_id": "1b5044e0-935f-4602-98e9-2af41ec7de10"
+		}
+	],
+	"observability": {
+		"enabled": true
+	}
 }

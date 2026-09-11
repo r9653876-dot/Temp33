@@ -1,57 +1,36 @@
 import React from 'react';
-import { Logo } from './components/Logo';
-import { Button } from './components/ui/Button';
-import { Card } from './components/ui/Card';
+import { Routes, Route } from 'react-router-dom';
+import { Home } from './pages/Home';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { Dashboard } from './pages/Dashboard';
+import { Profile } from './pages/Profile';
+import { AdminLogin } from './pages/admin/AdminLogin';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
   return (
-    <div className="app-container">
-      {/* Decorative background elements */}
-      <div className="bg-shape shape-1"></div>
-      <div className="bg-shape shape-2"></div>
-      <div className="bg-shape shape-3"></div>
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
 
-      <header className="header glass-panel">
-        <Logo />
-        <nav className="nav">
-          <Button variant="ghost">Log In</Button>
-          <Button variant="primary">Join LumiLove</Button>
-        </nav>
-      </header>
+      {/* Protected User Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/profile" element={<Profile />} />
+      </Route>
 
-      <main className="main-content">
-        <section className="hero">
-          <div className="hero-content">
-            <h1 className="hero-title">
-              Find Your Kind of <span className="text-gradient">Connection.</span>
-            </h1>
-            <p className="hero-subtitle">
-              A women-only space to meet, connect and build meaningful relationships.
-            </p>
-            <div className="hero-actions">
-              <Button size="lg" variant="primary">Join LumiLove</Button>
-              <Button size="lg" variant="secondary">Explore How It Works</Button>
-            </div>
-          </div>
-          
-          <div className="hero-visual">
-            <Card hoverable glass className="preview-card">
-              <div className="preview-image-placeholder"></div>
-              <div className="preview-info">
-                <h3>Sarah, 28</h3>
-                <p>Creative Director • New York</p>
-                <div className="preview-tags">
-                  <span className="tag">Art</span>
-                  <span className="tag">Coffee</span>
-                  <span className="tag">Travel</span>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </section>
-      </main>
-    </div>
+      {/* Protected Admin Routes */}
+      <Route element={<ProtectedRoute requireAdmin={true} />}>
+        <Route path="/admin" element={<AdminDashboard />} />
+        {/* /admin/users and others will be nested here later */}
+      </Route>
+    </Routes>
   );
 }
 
