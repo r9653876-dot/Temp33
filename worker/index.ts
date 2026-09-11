@@ -7,6 +7,7 @@ import { profileRouter } from './profile';
 export type Bindings = {
   DB: D1Database;
   ENVIRONMENT: string;
+  ASSETS: any;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -28,9 +29,15 @@ app.route('/api/auth', authRouter);
 app.route('/api/admin', adminRouter);
 app.route('/api/profile', profileRouter);
 
-// Fallback for SPA (Cloudflare Pages or Assets handles actual static files)
-// If a request misses the static assets and the API, it shouldn't hit here in production 
-// because wrangler assets handling is "single-page-application".
-app.get('*', (c) => c.text('LumiLove API Backend running', 404));
+// Fallback for SPA
+app.get('*', async (c) => {
+  if (c.req.path.startsWith('/api/')) {
+    return c.json({ error: 'Not Found' }, 404);
+  }
+  // Serve the index.html for all non-API routes so React Router can handle them
+  const url = new URL(c.req.url);
+  url.pathname = '/index.html';
+  return c.env.ASSETS.fetch(new Request(url.toString(), c.req.raw));
+});
 
 export default app;
