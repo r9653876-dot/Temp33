@@ -5,6 +5,8 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { Profile } from './pages/Profile';
+import { Discover } from './pages/Discover';
+import { Matches } from './pages/Matches';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -23,6 +25,8 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/discover" element={<Discover />} />
+        <Route path="/matches" element={<Matches />} />
       </Route>
 
       {/* Protected Admin Routes */}

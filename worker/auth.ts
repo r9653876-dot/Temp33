@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { Bindings } from './index';
-import { hashPassword, verifyPassword, generateSessionToken } from './crypto';
+import { hashPassword, verifyPassword, generateSessionToken, hashSessionToken } from './crypto';
 
 export const authRouter = new Hono<{ Bindings: Bindings }>();
 
@@ -12,14 +12,20 @@ const uuidv4 = () => {
 
 authRouter.post('/register', async (c) => {
   const body = await c.req.json();
-  const { email, password, full_name, date_of_birth, location, bio, interests, relationship_preference, profile_photo_url } = body;
+  const { email, password, full_name, date_of_birth, location, profession, bio, interests, relationship_preference, profile_photo_url, is_woman } = body;
 
-  if (!email || !password || !full_name) {
+  const normalizedEmail = email.trim().toLowerCase();
+  
+  if (!normalizedEmail || !password || !full_name) {
     return c.json({ error: 'Missing required fields' }, 400);
   }
 
+  if (is_woman !== true) {
+    return c.json({ error: 'LumiLove is a women-only space. You must confirm you identify as a woman.' }, 403);
+  }
+
   // Check if user exists
-  const existingUser = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
+  const existingUser = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(normalizedEmail).first();
   if (existingUser) {
     return c.json({ error: 'Email already registered' }, 400);
   }
@@ -32,27 +38,10 @@ authRouter.post('/register', async (c) => {
   try {
     await c.env.DB.batch([
       c.env.DB.prepare('INSERT INTO users (id, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?)')
-        .bind(userId, email, hashedPassword, 'user', 'active'),
-      c.env.DB.prepare('INSERT INTO profiles (id, user_id, full_name, date_of_birth, location, bio, interests, relationship_preference, profile_photo_url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .bind(profileId, userId, full_name, date_of_birth, location, bio, JSON.stringify(interests || []), relationship_preference, profile_photo_url, 'pending')
+        .bind(userId, normalizedEmail, hashedPassword, 'user', 'active'),
+      c.env.DB.prepare('INSERT INTO profiles (id, user_id, full_name, date_of_birth, location, profession, bio, interests, relationship_preference, profile_photo_url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(profileId, userId, full_name, date_of_birth, location, profession, bio, JSON.stringify(interests || []), relationship_preference, profile_photo_url, 'pending')
     ]);
-
-    // Create session
-    const sessionId = uuidv4();
-    const sessionToken = generateSessionToken();
-    const tokenHash = await hashPassword(sessionToken); // we can use the same PBKDF2 logic or SHA256 for token
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-    await c.env.DB.prepare('INSERT INTO sessions (id, user_id, session_token_hash, expires_at) VALUES (?, ?, ?, ?)')
-      .bind(sessionId, userId, tokenHash, expiresAt.toISOString()).run();
-
-    setCookie(c, 'session_token', sessionToken, {
-      httpOnly: true,
-      secure: c.env.ENVIRONMENT === 'production',
-      sameSite: 'Lax',
-      path: '/',
-      expires: expiresAt
-    });
 
     return c.json({ message: 'Registration successful. Your profile has been submitted for review.', user_id: userId }, 201);
   } catch (error) {
@@ -62,32 +51,40 @@ authRouter.post('/register', async (c) => {
 
 authRouter.post('/login', async (c) => {
   const { email, password } = await c.req.json();
-  if (!email || !password) return c.json({ error: 'Missing credentials' }, 400);
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail || !password) return c.json({ error: 'Missing credentials' }, 400);
 
-  const user = await c.env.DB.prepare('SELECT id, password_hash, status FROM users WHERE email = ?').bind(email).first<{id: string, password_hash: string, status: string}>();
+  const user = await c.env.DB.prepare(`
+    SELECT u.id, u.password_hash, u.status as user_status, p.status as profile_status 
+    FROM users u 
+    LEFT JOIN profiles p ON u.id = p.user_id 
+    WHERE u.email = ?
+  `).bind(normalizedEmail).first<{id: string, password_hash: string, user_status: string, profile_status: string}>();
+  
   if (!user || !(await verifyPassword(password, user.password_hash))) {
     return c.json({ error: 'Invalid credentials' }, 401);
   }
 
-  if (user.status === 'suspended' || user.status === 'deleted') {
-    return c.json({ error: `Account is ${user.status}` }, 403);
+  if (user.user_status === 'suspended' || user.user_status === 'deleted') {
+    return c.json({ error: `Account is ${user.user_status}` }, 403);
   }
 
   // Create session
   const sessionId = uuidv4();
   const sessionToken = generateSessionToken();
-  const tokenHash = await hashPassword(sessionToken);
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const tokenHash = await hashSessionToken(sessionToken);
+  const expiresDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const expiresAtSQLite = expiresDate.toISOString().replace('T', ' ').split('.')[0];
 
   await c.env.DB.prepare('INSERT INTO sessions (id, user_id, session_token_hash, expires_at) VALUES (?, ?, ?, ?)')
-    .bind(sessionId, user.id, tokenHash, expiresAt.toISOString()).run();
+    .bind(sessionId, user.id, tokenHash, expiresAtSQLite).run();
 
   setCookie(c, 'session_token', sessionToken, {
     httpOnly: true,
     secure: c.env.ENVIRONMENT === 'production',
     sameSite: 'Lax',
     path: '/',
-    expires: expiresAt
+    expires: expiresDate
   });
 
   return c.json({ message: 'Login successful' }, 200);
@@ -104,7 +101,7 @@ export const requireUser = async (c: any, next: any) => {
   const token = getCookie(c, 'session_token');
   if (!token) return c.json({ error: 'Unauthorized' }, 401);
   
-  const tokenHash = await hashPassword(token); // PBKDF2 hash
+  const tokenHash = await hashSessionToken(token); // Deterministic SHA-256 hash
   const session = await c.env.DB.prepare('SELECT user_id FROM sessions WHERE session_token_hash = ? AND expires_at > CURRENT_TIMESTAMP').bind(tokenHash).first();
   
   if (!session) {
@@ -112,12 +109,17 @@ export const requireUser = async (c: any, next: any) => {
   }
   
   c.set('userId', session.user_id);
-  await next();
+  return await next();
 };
 
 authRouter.get('/me', requireUser, async (c) => {
   const userId = c.get('userId');
-  const user = await c.env.DB.prepare('SELECT id, email, role, status FROM users WHERE id = ?').bind(userId).first();
+  const user = await c.env.DB.prepare(`
+    SELECT u.id, u.email, u.role, u.status as user_status, p.status as profile_status 
+    FROM users u
+    LEFT JOIN profiles p ON u.id = p.user_id
+    WHERE u.id = ?
+  `).bind(userId).first();
   if (!user) return c.json({ error: 'User not found' }, 404);
   return c.json(user);
 });

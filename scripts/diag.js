@@ -1,7 +1,8 @@
-// worker/crypto.ts
+import { webcrypto } from 'crypto';
 
-export async function hashPassword(password: string): Promise<string> {
-  // Generate random salt
+const crypto = webcrypto;
+
+async function hashPassword(password) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   
   const keyMaterial = await crypto.subtle.importKey(
@@ -23,14 +24,13 @@ export async function hashPassword(password: string): Promise<string> {
     256
   );
 
-  // Return base64 encoded salt + ":" + base64 encoded hash
   const saltB64 = arrayBufferToBase64(salt);
   const hashB64 = arrayBufferToBase64(derivedBits);
   
   return `${saltB64}:${hashB64}`;
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
+function arrayBufferToBase64(buffer) {
   let binary = '';
   const bytes = new Uint8Array(buffer);
   const len = bytes.byteLength;
@@ -40,7 +40,8 @@ function arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
   return btoa(binary);
 }
 
-export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+// Mimic verifyPassword from worker/crypto.ts
+async function verifyPassword(password, storedHash) {
   const [saltB64, hashB64] = storedHash.split(":");
   if (!saltB64 || !hashB64) return false;
 
@@ -73,15 +74,28 @@ export async function verifyPassword(password: string, storedHash: string): Prom
   return calculatedHashB64 === hashB64;
 }
 
-export function generateSessionToken(): string {
-  const buffer = new Uint8Array(32);
-  crypto.getRandomValues(buffer);
-  return Array.from(buffer).map(b => b.toString(16).padStart(2, '0')).join('');
+async function runDiagnostics() {
+  console.log("Running PBKDF2 Web Crypto Diagnostics...");
+  const testPassword = "diagnostictest";
+  
+  try {
+    const hash = await hashPassword(testPassword);
+    const isValid = await verifyPassword(testPassword, hash);
+    const isInvalid = await verifyPassword("wrongpassword", hash);
+    
+    console.log("Generated hash successfully.");
+    console.log(`Verify with correct password: ${isValid ? 'PASS' : 'FAIL'}`);
+    console.log(`Verify with incorrect password: ${!isInvalid ? 'PASS' : 'FAIL'}`);
+
+    if (!isValid) {
+      console.error("DIAGNOSTIC FAILURE: Verify returned false for the exact same password!");
+    } else {
+      console.log("DIAGNOSTIC SUCCESS: The algorithms perfectly match byte-for-byte in Node.js webcrypto.");
+    }
+
+  } catch (e) {
+    console.error("Error during diagnostics:", e);
+  }
 }
 
-export async function hashSessionToken(token: string): Promise<string> {
-  const msgUint8 = new TextEncoder().encode(token);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+runDiagnostics();

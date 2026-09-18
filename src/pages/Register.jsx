@@ -13,6 +13,7 @@ export function Register() {
     full_name: '',
     date_of_birth: '',
     location: '',
+    profession: '',
     bio: '',
     interests: '',
     relationship_preference: 'Friendship',
@@ -47,7 +48,7 @@ export function Register() {
 
     try {
       const interestsArray = formData.interests.split(',').map(i => i.trim()).filter(Boolean);
-      const submitData = { ...formData, interests: interestsArray };
+      const submitData = { ...formData, interests: interestsArray, is_woman: isWomanCheck };
       delete submitData.confirmPassword;
 
       const res = await fetch('/api/auth/register', {
@@ -59,8 +60,8 @@ export function Register() {
       const data = await res.json();
 
       if (res.ok) {
-        setSuccess('Registration successful! Your profile is pending review. Redirecting...');
-        setTimeout(() => navigate('/dashboard'), 2000);
+        setSuccess('Registration successful! Your profile is pending review. You will be able to log in once approved. Redirecting to login...');
+        setTimeout(() => navigate('/login'), 3000);
       } else {
         setError(data.error || 'Registration failed');
       }
@@ -101,6 +102,8 @@ export function Register() {
             <Input label="Date of Birth" type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} required />
             <Input label="Location" name="location" value={formData.location} onChange={handleChange} placeholder="City, Country" required />
           </div>
+          
+          <Input label="Profession" name="profession" value={formData.profession} onChange={handleChange} placeholder="e.g. Graphic Designer" />
 
           <Input label="Short Bio" name="bio" value={formData.bio} onChange={handleChange} placeholder="Tell us about yourself..." required />
           

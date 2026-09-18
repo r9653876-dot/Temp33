@@ -1,0 +1,126 @@
+.discover-main {
+  background-color: var(--color-gray-50);
+  min-height: 100vh;
+}
+
+.discover-content {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.discover-header {
+  margin-bottom: 2rem;
+}
+
+.discover-layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.discover-filters {
+  width: 300px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 2rem;
+}
+
+.discover-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.profile-card {
+  overflow: hidden;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.profile-card-image {
+  height: 300px;
+  width: 100%;
+  background-color: var(--color-gray-200);
+  position: relative;
+}
+
+.profile-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-card-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-weight: 600;
+  background: var(--gradient-light);
+}
+
+.profile-card-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.profile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.profile-card-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--color-plum);
+}
+
+.profile-card-meta {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin: 0 0 1rem 0;
+  font-weight: 500;
+}
+
+.profile-card-bio {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  flex: 1;
+}
+
+.profile-card-tags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 992px) {
+  .discover-layout {
+    flex-direction: column;
+  }
+  
+  .discover-filters {
+    width: 100%;
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .discover-content {
+    padding: 1rem;
+    padding-bottom: 5rem;
+  }
+}

@@ -56,6 +56,7 @@ export function AuthProvider({ children }) {
   };
 
   const loginAdmin = async (email, password) => {
+    console.log("Trace: Executing loginAdmin, calling /api/admin/login...");
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -67,6 +68,7 @@ export function AuthProvider({ children }) {
       return { success: true };
     }
     const data = await res.json();
+    if (data.diag) console.error("Admin Login Diagnostic:", data.diag);
     return { success: false, error: data.error };
   };
 

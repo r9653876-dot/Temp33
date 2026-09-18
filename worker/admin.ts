@@ -1,38 +1,78 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { Bindings } from './index';
-import { verifyPassword, hashPassword, generateSessionToken } from './crypto';
+import { verifyPassword, hashPassword, generateSessionToken, hashSessionToken } from './crypto';
 
 export const adminRouter = new Hono<{ Bindings: Bindings }>();
 
 const uuidv4 = () => crypto.randomUUID();
 
 adminRouter.post('/login', async (c) => {
-  const { email, password } = await c.req.json();
-  if (!email || !password) return c.json({ error: 'Missing credentials' }, 400);
+  const reqBody = await c.req.json();
+  const { email, password } = reqBody;
+  
+  const diagnostic = {
+    receivedEmailField: !!email,
+    receivedPasswordField: !!password,
+    passwordFieldLength: password ? password.length : 0,
+    normalizedEmail: email ? email.trim().toLowerCase() : null,
+    dbUserFound: false,
+    passwordVerified: false,
+    sessionCreated: false,
+    dbTableName: 'admin_users'
+  };
 
-  const admin = await c.env.DB.prepare('SELECT id, password_hash FROM admin_users WHERE email = ?').bind(email).first<{id: string, password_hash: string}>();
-  if (!admin || !(await verifyPassword(password, admin.password_hash))) {
-    return c.json({ error: 'Invalid email or password.' }, 401);
+  if (!email || !password) {
+    return c.json({ error: 'Missing credentials', diag: diagnostic }, 400);
   }
 
-  const sessionId = uuidv4();
-  const sessionToken = generateSessionToken();
-  const tokenHash = await hashPassword(sessionToken);
-  const expiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // 2 days
+  const normalizedEmail = email.trim().toLowerCase();
+  let admin;
+  try {
+    admin = await c.env.DB.prepare('SELECT id, password_hash FROM admin_users WHERE email = ?').bind(normalizedEmail).first<{id: string, password_hash: string}>();
+    diagnostic.dbUserFound = !!admin;
+  } catch (e) {
+    return c.json({ error: 'Database query failed', diag: diagnostic }, 500);
+  }
 
-  await c.env.DB.prepare('INSERT INTO admin_sessions (id, admin_id, session_token_hash, expires_at) VALUES (?, ?, ?, ?)')
-    .bind(sessionId, admin.id, tokenHash, expiresAt.toISOString()).run();
+  if (!admin) {
+    // Return early to see if THIS is the failure point
+    return c.json({ error: 'Invalid credentials - User not found in admin_users', diag: diagnostic }, 401);
+  }
 
-  setCookie(c, 'admin_session_token', sessionToken, {
-    httpOnly: true,
-    secure: c.env.ENVIRONMENT === 'production',
-    sameSite: 'Lax',
-    path: '/api/admin',
-    expires: expiresAt
-  });
+  try {
+    diagnostic.passwordVerified = await verifyPassword(password, admin.password_hash);
+  } catch (e) {
+    return c.json({ error: 'Password verification crashed', diag: diagnostic }, 500);
+  }
 
-  return c.json({ message: 'Admin login successful' }, 200);
+  if (!diagnostic.passwordVerified) {
+    return c.json({ error: 'Invalid credentials - Password mismatch', diag: diagnostic }, 401);
+  }
+
+  try {
+    const sessionId = uuidv4();
+    const sessionToken = generateSessionToken();
+    const tokenHash = await hashSessionToken(sessionToken);
+    const expiresDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    const expiresAtSQLite = expiresDate.toISOString().replace('T', ' ').split('.')[0]; // YYYY-MM-DD HH:MM:SS
+
+    await c.env.DB.prepare('INSERT INTO admin_sessions (id, admin_id, session_token_hash, expires_at) VALUES (?, ?, ?, ?)')
+      .bind(sessionId, admin.id, tokenHash, expiresAtSQLite).run();
+    diagnostic.sessionCreated = true;
+
+    setCookie(c, 'admin_session_token', sessionToken, {
+      httpOnly: true,
+      secure: c.env.ENVIRONMENT === 'production',
+      sameSite: 'Lax',
+      path: '/api/admin',
+      expires: expiresDate
+    });
+
+    return c.json({ message: 'Admin login successful', diag: diagnostic }, 200);
+  } catch (e) {
+    return c.json({ error: 'Session creation failed', diag: diagnostic }, 500);
+  }
 });
 
 adminRouter.post('/logout', async (c) => {
@@ -44,7 +84,7 @@ export const requireAdmin = async (c: any, next: any) => {
   const token = getCookie(c, 'admin_session_token');
   if (!token) return c.json({ error: 'Unauthorized admin access' }, 401);
   
-  const tokenHash = await hashPassword(token); // PBKDF2 hash
+  const tokenHash = await hashSessionToken(token); // Deterministic SHA-256 hash
   const session = await c.env.DB.prepare('SELECT admin_id FROM admin_sessions WHERE session_token_hash = ? AND expires_at > CURRENT_TIMESTAMP').bind(tokenHash).first();
   
   if (!session) {
@@ -52,11 +92,11 @@ export const requireAdmin = async (c: any, next: any) => {
   }
   
   c.set('adminId', session.admin_id);
-  await next();
+  return await next();
 };
 
 adminRouter.use('/*', async (c, next) => {
-  if (c.req.path.includes('/login') || c.req.path.includes('/logout')) {
+  if (c.req.path.includes('/login') || c.req.path.includes('/logout') || c.req.path.includes('/diag')) {
     return next();
   }
   return requireAdmin(c, next);
@@ -133,3 +173,21 @@ adminRouter.post('/users/:id/approve', async (c) => updateProfileStatus(c, c.req
 adminRouter.post('/users/:id/reject', async (c) => updateProfileStatus(c, c.req.param('id'), 'rejected'));
 adminRouter.post('/users/:id/suspend', async (c) => updateProfileStatus(c, c.req.param('id'), 'suspended'));
 adminRouter.post('/users/:id/reactivate', async (c) => updateProfileStatus(c, c.req.param('id'), 'approved'));
+
+adminRouter.get('/diag', async (c) => {
+  try {
+    const testPassword = "diagnostictest";
+    const hash = await hashPassword(testPassword);
+    const isValid = await verifyPassword(testPassword, hash);
+    const isInvalid = await verifyPassword("wrong", hash);
+    
+    return c.json({
+      environment: c.env.ENVIRONMENT,
+      hashGenerated: !!hash,
+      verificationPass: isValid === true && isInvalid === false,
+      message: isValid ? "PASS: Cloudflare Worker PBKDF2 matches perfectly." : "FAIL: Worker PBKDF2 mismatch."
+    });
+  } catch (e) {
+    return c.json({ error: e.message }, 500);
+  }
+});

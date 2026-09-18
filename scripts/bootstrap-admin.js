@@ -25,10 +25,20 @@ async function hashPassword(password) {
     256
   );
 
-  const saltB64 = btoa(String.fromCharCode(...new Uint8Array(salt)));
-  const hashB64 = btoa(String.fromCharCode(...new Uint8Array(derivedBits)));
+  const saltB64 = arrayBufferToBase64(salt);
+  const hashB64 = arrayBufferToBase64(derivedBits);
   
   return `${saltB64}:${hashB64}`;
+}
+
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
 const rl = readline.createInterface({

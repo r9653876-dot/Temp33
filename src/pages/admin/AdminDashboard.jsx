@@ -8,6 +8,7 @@ export function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchData = async () => {
     try {
@@ -18,9 +19,12 @@ export function AdminDashboard() {
       if (statsRes.ok && usersRes.ok) {
         setStats(await statsRes.json());
         setUsers(await usersRes.json());
+      } else {
+        setError(`API Error: /stats returned ${statsRes.status}, /users returned ${usersRes.status}`);
       }
     } catch (e) {
       console.error(e);
+      setError(`Network error: ${e.message}`);
     } finally {
       setLoading(false);
     }
@@ -47,6 +51,12 @@ export function AdminDashboard() {
         <h1 style={{ color: 'var(--color-plum)', margin: 0 }}>LumiLove Admin</h1>
         <Button variant="ghost" onClick={logoutAdmin}>Log Out Admin</Button>
       </header>
+
+      {error && (
+        <div style={{ background: 'var(--color-red)', color: 'white', padding: '1rem', borderRadius: '8px', marginBottom: '2rem' }}>
+          <strong>Error:</strong> {error}
+        </div>
+      )}
 
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
         <Card style={{ background: 'white' }}>

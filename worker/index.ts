@@ -3,11 +3,16 @@ import { cors } from 'hono/cors';
 import { authRouter } from './auth';
 import { adminRouter } from './admin';
 import { profileRouter } from './profile';
+import { discoverRouter } from './discover';
+import { photosRouter } from './photos';
+import { likesRouter } from './likes';
+import { matchesRouter } from './matches';
 
 export type Bindings = {
   DB: D1Database;
   ENVIRONMENT: string;
   ASSETS: any;
+  PROFILE_IMAGES: R2Bucket;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -28,16 +33,18 @@ app.onError((err, c) => {
 app.route('/api/auth', authRouter);
 app.route('/api/admin', adminRouter);
 app.route('/api/profile', profileRouter);
+app.route('/api/profile/photos', photosRouter);
+app.route('/api/discover', discoverRouter);
+app.route('/api/likes', likesRouter);
+app.route('/api/matches', matchesRouter);
 
 // Fallback for SPA
 app.get('*', async (c) => {
   if (c.req.path.startsWith('/api/')) {
     return c.json({ error: 'Not Found' }, 404);
   }
-  // Serve the index.html for all non-API routes so React Router can handle them
-  const url = new URL(c.req.url);
-  url.pathname = '/index.html';
-  return c.env.ASSETS.fetch(new Request(url.toString(), c.req.raw));
+  // Let Cloudflare ASSETS handle the SPA fallback natively via wrangler.jsonc
+  return c.env.ASSETS.fetch(c.req.raw);
 });
 
 export default app;

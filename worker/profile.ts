@@ -13,6 +13,10 @@ profileRouter.get('/', async (c) => {
   if (!profile) {
     return c.json({ error: 'Profile not found' }, 404);
   }
+  
+  const photos = await c.env.DB.prepare('SELECT id, is_primary FROM profile_photos WHERE user_id = ? ORDER BY created_at ASC').bind(userId).all();
+  profile.photos = photos.results;
+
   return c.json(profile);
 });
 
@@ -21,15 +25,16 @@ profileRouter.put('/', async (c) => {
   const body = await c.req.json();
   
   // Destructure fields that are allowed to be updated by the user
-  const { bio, interests, location, relationship_preference, profile_photo_url } = body;
+  const { bio, profession, interests, location, relationship_preference, profile_photo_url } = body;
 
   try {
     await c.env.DB.prepare(`
       UPDATE profiles 
-      SET bio = ?, interests = ?, location = ?, relationship_preference = ?, profile_photo_url = ?, updated_at = CURRENT_TIMESTAMP 
+      SET bio = ?, profession = ?, interests = ?, location = ?, relationship_preference = ?, profile_photo_url = ?, updated_at = CURRENT_TIMESTAMP 
       WHERE user_id = ?
     `).bind(
       bio, 
+      profession,
       JSON.stringify(interests || []), 
       location, 
       relationship_preference, 

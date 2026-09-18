@@ -24,6 +24,12 @@
 			"database_id": "1b5044e0-935f-4602-98e9-2af41ec7de10"
 		}
 	],
+	"r2_buckets": [
+		{
+			"binding": "PROFILE_IMAGES",
+			"bucket_name": "lumilove-profile-images"
+		}
+	],
 	"observability": {
 		"enabled": true
 	}
