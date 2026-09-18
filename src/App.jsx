@@ -9,6 +9,8 @@ import { Discover } from './pages/Discover';
 import { Matches } from './pages/Matches';
 import { AdminLogin } from './pages/admin/AdminLogin';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { VerifyEmail } from './pages/VerifyEmail';
+import { VerifyMobile } from './pages/VerifyMobile';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import './App.css';
 
@@ -21,8 +23,14 @@ function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/admin/login" element={<AdminLogin />} />
 
-      {/* Protected User Routes */}
-      <Route element={<ProtectedRoute />}>
+      {/* Semi-Protected Routes (Needs auth, but not verification) */}
+      <Route element={<ProtectedRoute requireVerification={false} />}>
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/verify-mobile" element={<VerifyMobile />} />
+      </Route>
+
+      {/* Protected User Routes (Needs verification) */}
+      <Route element={<ProtectedRoute requireVerification={true} />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/discover" element={<Discover />} />

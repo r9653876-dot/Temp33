@@ -81,7 +81,8 @@ export function AdminDashboard() {
               <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
                 <th style={{ padding: '1rem' }}>Email</th>
                 <th style={{ padding: '1rem' }}>Name</th>
-                <th style={{ padding: '1rem' }}>Status</th>
+                <th style={{ padding: '1rem' }}>Verification</th>
+                <th style={{ padding: '1rem' }}>Profile Status</th>
                 <th style={{ padding: '1rem' }}>Registered</th>
                 <th style={{ padding: '1rem' }}>Actions</th>
               </tr>
@@ -91,6 +92,17 @@ export function AdminDashboard() {
                 <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '1rem' }}>{u.email}</td>
                   <td style={{ padding: '1rem' }}>{u.full_name || '-'}</td>
+                  <td style={{ padding: '1rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <span className="tag" style={{ background: u.email_verified ? 'var(--color-green)' : 'var(--color-amber)', color: 'white', fontSize: '0.75rem' }}>
+                        {u.email_verified ? 'Email ✓' : 'Email Pending'}
+                      </span>
+                      <span className="tag" style={{ background: u.mobile_verified ? 'var(--color-green)' : 'var(--color-amber)', color: 'white', fontSize: '0.75rem' }}>
+                        {u.mobile_verified ? 'Mobile ✓' : 'Mobile Pending'}
+                      </span>
+                      {u.mobile_number && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.mobile_number}</span>}
+                    </div>
+                  </td>
                   <td style={{ padding: '1rem' }}>
                     <span className="tag" style={{ 
                       background: u.profile_status === 'approved' ? 'var(--color-green)' : 
@@ -121,7 +133,7 @@ export function AdminDashboard() {
                 </tr>
               ))}
               {users.length === 0 && (
-                <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No users found</td></tr>
+                <tr><td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No users found</td></tr>
               )}
             </tbody>
           </table>

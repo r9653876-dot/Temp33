@@ -28,6 +28,10 @@ photosRouter.get('/:id', async (c) => {
     }
   }
 
+  if (!c.env.PROFILE_IMAGES) {
+    return c.json({ error: 'Storage not configured' }, 501);
+  }
+
   // Fetch from R2
   const object = await c.env.PROFILE_IMAGES.get(photo.r2_object_key);
   
@@ -80,6 +84,10 @@ photosRouter.post('/', async (c) => {
   const photoId = uuidv4();
   const objectKey = `profile-images/${userId}/${photoId}.${ext}`;
 
+  if (!c.env.PROFILE_IMAGES) {
+    return c.json({ error: 'Storage not configured' }, 501);
+  }
+
   try {
     // Upload to R2
     await c.env.PROFILE_IMAGES.put(objectKey, await file.arrayBuffer(), {
@@ -122,8 +130,10 @@ photosRouter.delete('/:id', async (c) => {
   }
 
   try {
-    // Delete from R2
-    await c.env.PROFILE_IMAGES.delete(photo.r2_object_key);
+    if (c.env.PROFILE_IMAGES) {
+      // Delete from R2
+      await c.env.PROFILE_IMAGES.delete(photo.r2_object_key);
+    }
     
     // Delete from D1
     await c.env.DB.prepare('DELETE FROM profile_photos WHERE id = ? AND user_id = ?').bind(photoId, userId).run();

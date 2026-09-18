@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { Logo } from '../components/Logo';
+import { useAuth } from '../auth/AuthProvider';
 
 export function Register() {
   const [formData, setFormData] = useState({
@@ -24,6 +25,30 @@ export function Register() {
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
+
+  const generatePassword = () => {
+    const charset = {
+      upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      lower: 'abcdefghijklmnopqrstuvwxyz',
+      num: '0123456789',
+      special: '!@#$%^&*(),.?":{}|<>'
+    };
+    let pwd = '';
+    pwd += charset.upper[Math.floor(Math.random() * charset.upper.length)];
+    pwd += charset.lower[Math.floor(Math.random() * charset.lower.length)];
+    pwd += charset.num[Math.floor(Math.random() * charset.num.length)];
+    pwd += charset.special[Math.floor(Math.random() * charset.special.length)];
+    
+    const all = charset.upper + charset.lower + charset.num + charset.special;
+    for (let i = pwd.length; i < 16; i++) {
+      pwd += all[Math.floor(Math.random() * all.length)];
+    }
+    
+    pwd = pwd.split('').sort(() => 0.5 - Math.random()).join('');
+    
+    setFormData(prev => ({ ...prev, password: pwd, confirmPassword: pwd }));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -60,8 +85,9 @@ export function Register() {
       const data = await res.json();
 
       if (res.ok) {
-        setSuccess('Registration successful! Your profile is pending review. You will be able to log in once approved. Redirecting to login...');
-        setTimeout(() => navigate('/login'), 3000);
+        setSuccess('Registration successful! Please verify your email.');
+        await refreshUser();
+        setTimeout(() => navigate('/verify-email'), 1500);
       } else {
         setError(data.error || 'Registration failed');
       }
@@ -94,7 +120,16 @@ export function Register() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <Input label="Password" type="password" name="password" value={formData.password} onChange={handleChange} required />
+            <div style={{ position: 'relative' }}>
+              <Input label="Password" type="password" name="password" value={formData.password} onChange={handleChange} required />
+              <button 
+                type="button" 
+                onClick={generatePassword}
+                style={{ position: 'absolute', right: '0', top: '0', fontSize: '0.75rem', background: 'none', border: 'none', color: 'var(--color-magenta)', cursor: 'pointer', padding: '0.2rem' }}
+              >
+                Generate strong password
+              </button>
+            </div>
             <Input label="Confirm Password" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required />
           </div>
 

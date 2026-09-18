@@ -7,6 +7,23 @@ export const adminRouter = new Hono<{ Bindings: Bindings }>();
 
 const uuidv4 = () => crypto.randomUUID();
 
+const checkRateLimit = async (db: D1Database, action: string, identifier: string, limit: number, windowMinutes: number) => {
+  const now = new Date();
+  await db.prepare('DELETE FROM rate_limits WHERE reset_at < CURRENT_TIMESTAMP').run();
+  
+  let record = await db.prepare('SELECT * FROM rate_limits WHERE action = ? AND identifier = ?').bind(action, identifier).first();
+  
+  if (record) {
+    if (record.count >= limit) return false;
+    await db.prepare('UPDATE rate_limits SET count = count + 1 WHERE id = ?').bind(record.id).run();
+  } else {
+    const resetAt = new Date(now.getTime() + windowMinutes * 60000).toISOString().replace('T', ' ').split('.')[0];
+    await db.prepare('INSERT INTO rate_limits (id, action, identifier, count, reset_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(uuidv4(), action, identifier, 1, resetAt).run();
+  }
+  return true;
+};
+
 adminRouter.post('/login', async (c) => {
   const reqBody = await c.req.json();
   const { email, password } = reqBody;
@@ -27,6 +44,11 @@ adminRouter.post('/login', async (c) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+  
+  const ip = c.req.header('cf-connecting-ip') || 'unknown';
+  const allowed = await checkRateLimit(c.env.DB, 'admin_login', normalizedEmail, 5, 15);
+  if (!allowed) return c.json({ error: 'Too many login attempts', diag: diagnostic }, 429);
+
   let admin;
   try {
     admin = await c.env.DB.prepare('SELECT id, password_hash FROM admin_users WHERE email = ?').bind(normalizedEmail).first<{id: string, password_hash: string}>();
@@ -76,6 +98,11 @@ adminRouter.post('/login', async (c) => {
 });
 
 adminRouter.post('/logout', async (c) => {
+  const token = getCookie(c, 'admin_session_token');
+  if (token) {
+    const tokenHash = await hashSessionToken(token);
+    await c.env.DB.prepare('DELETE FROM admin_sessions WHERE session_token_hash = ?').bind(tokenHash).run();
+  }
   deleteCookie(c, 'admin_session_token', { path: '/api/admin' });
   return c.json({ message: 'Logged out' });
 });
@@ -130,7 +157,7 @@ adminRouter.get('/stats', async (c) => {
 
 adminRouter.get('/users', async (c) => {
   const users = await c.env.DB.prepare(`
-    SELECT u.id, u.email, u.status as user_status, p.full_name, p.status as profile_status, p.created_at 
+    SELECT u.id, u.email, u.status as user_status, u.email_verified, u.mobile_number, u.mobile_verified, p.full_name, p.status as profile_status, p.created_at 
     FROM users u 
     LEFT JOIN profiles p ON u.id = p.user_id 
     ORDER BY p.created_at DESC
@@ -141,7 +168,7 @@ adminRouter.get('/users', async (c) => {
 adminRouter.get('/users/:id', async (c) => {
   const id = c.req.param('id');
   const user = await c.env.DB.prepare(`
-    SELECT u.email, p.* 
+    SELECT u.email, u.email_verified, u.mobile_number, u.mobile_verified, p.* 
     FROM users u 
     LEFT JOIN profiles p ON u.id = p.user_id 
     WHERE u.id = ?
