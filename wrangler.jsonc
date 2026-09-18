@@ -17,12 +17,6 @@
 			"database_name": "lumilove-db",
 			"database_id": "1b5044e0-935f-4602-98e9-2af41ec7de10",
 			"migrations_dir": "migrations"
-		},
-		{
-			"binding": "lumilove_db",
-			"database_name": "lumilove-db",
-			"database_id": "1b5044e0-935f-4602-98e9-2af41ec7de10"
-		}
 	],
 
 	"observability": {
